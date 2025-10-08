@@ -92,9 +92,21 @@ void check_completed_processes(void) {
 			//more than 0 means there was a state change
 			if (result > 0) {
 				printf("Process %d completed\n", p->pid);
+				
+				// Free allocated memory
+				if (p->command) {
+					free(p->command);
+					p->command = NULL;
+				}
+				if (p->priority_str) {
+					free(p->priority_str);
+					p->priority_str = NULL;
+				}
+				
 				p->status = TERMINATED;
 				running_count--;
-				schedule_processes()
+				printf("Debug: Running count after completion: %d\n", running_count);
+				schedule_processes();
 			}
 		}
 	}
@@ -235,17 +247,13 @@ void perform_run(char* args[]) {
 	p->command = malloc(strlen(cmd_buffer) + 1);
 	strcpy(p->command, cmd_buffer);
 	
-	// Determine initial status based on running count and priority
-	if (running_count < MAX_RUNNING) {
-		p->status = RUNNING;
-		running_count++;
-		printf("Process %d started (Priority: %s)\n", p->pid, p->priority_str);
-	} else {
-		// Stop the process immediately if we're at capacity
-		kill(p->pid, SIGSTOP);
-		p->status = READY;
-		printf("Process %d queued (Priority: %s)\n", p->pid, p->priority_str);
-	}
+	// Always start the process as stopped initially, then schedule based on priority
+	kill(p->pid, SIGSTOP);
+	p->status = READY;
+	printf("Process %d queued (Priority: %s)\n", p->pid, p->priority_str);
+	
+	// Schedule processes based on priority
+	schedule_processes();
 }
 
 void perform_stop(char* args[]) {
@@ -317,6 +325,16 @@ void perform_kill(char* args[]) {
 	
 	kill(p->pid, SIGTERM);
 	printf("Process %d terminated\n", p->pid);
+	
+	// Free allocated memory
+	if (p->command) {
+		free(p->command);
+		p->command = NULL;
+	}
+	if (p->priority_str) {
+		free(p->priority_str);
+		p->priority_str = NULL;
+	}
 	
 	if (p->status == RUNNING) {
 		running_count--;
@@ -396,11 +414,21 @@ void perform_exit(void) {
 		}
 	}
 	
-	// Wait for all processes to terminate
+	// Wait for all processes to terminate and free memory
 	for (int i = 0; i < MAX_PROCESSES; ++i) {
 		process_record *p = &process_records[i];
 		if (p->pid > 0) {
 			waitpid(p->pid, NULL, 0);
+			
+			// Free allocated memory
+			if (p->command) {
+				free(p->command);
+				p->command = NULL;
+			}
+			if (p->priority_str) {
+				free(p->priority_str);
+				p->priority_str = NULL;
+			}
 		}
 	}
 	

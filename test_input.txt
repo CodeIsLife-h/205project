@@ -1,0 +1,9 @@
+run ./prog x40 40 P3
+run ./prog x50 50 P1
+run ./prog x60 60 P4
+run ./prog x70 70 P2
+run ./prog x80 80 P5
+list
+sleep 5
+list
+exit
