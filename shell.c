@@ -413,6 +413,15 @@ void perform_exit(void) {
 			kill(p->pid, SIGTERM);
 		}
 	}
+
+	sleep(2);
+
+	for (int i = 0; i < MAX_PROCESSES; ++i) {
+		process_record *p = &process_records[i];
+		if (p->pid > 0 && p->status != TERMINATED) {
+			kill(p->pid, SIGKILL);
+		}
+	}
 	
 	// Wait for all processes to terminate and free memory
 	for (int i = 0; i < MAX_PROCESSES; ++i) {
